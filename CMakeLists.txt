@@ -24,7 +24,7 @@ set(HDR_MAKE_SRCS src/mainHDRMake.cpp src/CTF.cpp src/CTFSolver.cpp src/Weightin
 set(HDR_MAKE_APP  bin/hdr_make )
 
 #To build in debug mode change BUILD_TYPE to "Debug"
-set(BUILD_TYPE  Debug )
+set(BUILD_TYPE  Release )
 
 #Compiler flags
 #TODO: The below code only works with G++

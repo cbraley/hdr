@@ -15,8 +15,11 @@ using namespace cimg_library;
 
 
 bool CTFSolver::checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
-    int& outWidth, int& outHeight, int& outMinNumChans)
+    int& outWidth, int& outHeight, int& outMinNumChans, std::string* reason)
 {
+    if(reason != NULL){
+        *reason = "";
+    }
     //Load each image and see if CImg throws
     //If you are using this code and can't figure out why CImg is failing to load your images,
     //check the following:
@@ -46,6 +49,9 @@ bool CTFSolver::checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
 
                 //Check for dimension mismatch
                 if(myWidth != outWidth || myHeight != outHeight){
+                    if(reason != NULL){
+                        *reason = "Dimension Mismatch";
+                    }
                     return false;
                 }
 
@@ -54,12 +60,18 @@ bool CTFSolver::checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
             }
         }
     }catch(const CImgException& ex){
+        if(reason != NULL){
+            *reason = "CImg exception: " + std::string(ex.what());
+        }
         return false;
     }catch(...){ //Catches ANYTHING thown
         //This clause is included because I don't want to read the CImg
         //source and verify that it ONLY throws CImgExceptionss
         //The PDF documentation appears unclear on this matter, or maybe
         //I haven't found the information.
+        if(reason != NULL){
+            *reason = "Unknown exception!";
+        }
         return false;
     }
 

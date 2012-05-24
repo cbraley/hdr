@@ -88,8 +88,9 @@ public:
     /// @outWidth is set to the width of the images.
     /// @outHeight is set to the width of the images.
     /// @outMinNumChans is set to the minimum number of color channels found.
+    /// @reason is a return parameter that describes errors(if any)
     static bool checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
-        int& outWidth, int& outHeight, int& outMinNumChans);
+        int& outWidth, int& outHeight, int& outMinNumChans, std::string* reason = NULL);
 
 
 private:

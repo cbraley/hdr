@@ -17,11 +17,11 @@ function [] = vis_HDR(hdrPfmPath, Npath, residualPath )
             return;
         end
         
-        imshow(hdr);
-        colormap jet;
-        colorbar;
-        axis image;
-        t = title(sprintf('HDR image from %s',hdrPfmPath));
+        hm = HeatMap(hdr);
+        %colormap jet;
+        %colorbar;
+        %axis image;
+        t = addTitle(hm, sprintf('HDR image from %s',hdrPfmPath));
         set(t, 'FontSize', FONT_SIZE);
     end
     
@@ -42,11 +42,12 @@ function [] = vis_HDR(hdrPfmPath, Npath, residualPath )
     if( strcmp(residualPath,'') ~= 1)
         im = parsePfm(residualPath);
         figure;
-        image(im,'CDataMapping','scaled');
-        colormap jet;
-        colorbar;
-        axis image;
-        t = title(sprintf('Residual visualization from: %s',residualPath));
+        %image(im,'CDataMapping','scaled');
+        hm = HeatMap(im);
+        %colormap jet;
+        %colorbar;
+        %axis image;
+        t = addTitle(hm, sprintf('Residual visualization from: %s',residualPath));
         set(t, 'FontSize', FONT_SIZE);
     end
 

@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 //--
-#define cimg_display 0    //Don't compile cimg to use X11 displays
+#define cimg_display 0     //Don't compile cimg to use X11 display
 #define cimg_verbosity 0   // Disable modal window in CImg exceptions.
 #include "cimg/CImg.h"
 #undef cimg_display
@@ -432,10 +432,12 @@ int main(int argc, char** argv){
     //Make sure all the images load
     //also, get the width and height from disk
     int width, height, numChans; width = height = numChans = -1;
+    std::string errStr;
     const bool imagesOK = CTFSolver::checkImagesOK(images,
-        width, height, numChans);
+        width, height, numChans, &errStr);
     if(!imagesOK){
-        std::cerr << "Could not load 1 or more images, or the dimensions did not match!" << std::endl;
+        std::cerr << "Could not load 1 or more images!" << std::endl;
+        std::cerr << "The issue was: \"" << errStr << "\"" << std::endl;
         return 7;
     }else if(numChans != 1){
         std::cerr << "Error - Only works on monochrome images!" << std::endl;
