@@ -14,8 +14,7 @@
 class CTF{
 public:
 
-    //Allows altering how precise the linear solver is
-    //single precision(float) should typically be sufficient, but you
+    //Single precision(float) should typically be sufficient, but you
     //could change this to double if you like
     typedef float ctf_t;
 
@@ -23,6 +22,8 @@ public:
      *  Initialize a CTF.
      */
     CTF(const std::vector<ctf_t>& values);
+
+    CTF();
 
     /**
      *  Load the CTF value for a particular pixel value in the range [0, 255].
@@ -40,6 +41,15 @@ public:
      *  This is not a constructor because constructors have no good way to indicate failure.
      */
     static bool loadCTF(CTF& ctf, const std::string& fileName);
+
+    /**
+     *  Create a linear CTF.  
+     *
+     *  @param maxCTFValue is the maximum CTF value.
+     *  @param minimumCTFValue is the minimum CTF value.  Defaults to 0.
+     */
+    static CTF makeLinearCTF(CTF::ctf_t maxCTFValue,
+        CTF::ctf_t minCTFValue = static_cast<CTF::ctf_t>(0.0));
 
 
 private:

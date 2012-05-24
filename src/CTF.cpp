@@ -3,6 +3,16 @@
 #include <fstream>
 #include <cstdlib>
 
+CTF::CTF(){
+    CTF::ctf_t v          = static_cast<CTF::ctf_t>(0.0);
+    const CTF::ctf_t step = static_cast<CTF::ctf_t>(0.0/256.0);
+    for(int i = 0; i < 256; i++){
+        data.push_back(v);
+        v += step;
+    }
+
+}
+
 CTF::CTF(const std::vector<ctf_t>& values) : 
     data(values)
 {
@@ -50,3 +60,19 @@ bool CTF::loadCTF(CTF& ctf, const std::string& fileName){
     return worked;
 }
 
+
+CTF::CTF CTF::makeLinearCTF(CTF::ctf_t maxCTFValue,
+    CTF::ctf_t minCTFValue)
+{
+    assert(minCTFValue < maxCTFValue);
+
+    CTF ctf;
+    CTF::ctf_t step = (maxCTFValue - minCTFValue) / static_cast<CTF::ctf_t>(255);
+    CTF::ctf_t val = minCTFValue;
+    for(int pix = 0; pix <= 255; pix++){
+        ctf.data[pix] = val; 
+        val += step;
+    }
+
+    return ctf;
+}

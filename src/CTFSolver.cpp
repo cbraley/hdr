@@ -3,7 +3,9 @@
 #include <cassert>
 #include <cstdlib>
 //--
-#define cimg_display 0
+#define cimg_display 0    //Don't compile cimg to use X11 displays
+#define cimg_verbosity 0   // Disable modal window in CImg exceptions.
+#include "cimg/CImg.h"
 #include "cimg/CImg.h"
 #undef cimg_display
 using namespace cimg_library;
@@ -12,9 +14,69 @@ using namespace cimg_library;
 #include "Eigen/Dense"
 
 
-CTFSolver::ImageExposurePair::ImageExposurePair(long microSeconds, const std::string& path) : 
+bool CTFSolver::checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
+    int& outWidth, int& outHeight, int& outMinNumChans)
+{
+    //Load each image and see if CImg throws
+    //If you are using this code and can't figure out why CImg is failing to load your images,
+    //check the following:
+    //
+    //    Your image type should be either handles by cimg natively, or you should have setup the CMakeLists.txt
+    //    file appropriately to link the required libraries.  In the latter case, you must make CImg aware of this
+    //    via macros like cimg_use_png, cimg_use_jpeg, etc.
+    //
+    //    Your images should have an extension such that the cimg "load" function can divine the file type appropraitely.
+    //    For some file types, CImg can read the file's header(usually via a magic number in the header) and figure things
+    //    out but this is not always the case.
+    //
+    //    Make sure your images are 8 bit images!
+
+    outWidth = outHeight = outMinNumChans = -1;
+    try{
+        for(size_t i = 0; i < images.size(); i++){
+            CImg<unsigned char> im(images[i].imagePath.c_str());
+            if(i == 0){
+                outWidth       = im.width();
+                outHeight      = im.width();
+                outMinNumChans = im.spectrum();
+            }else{
+                int myWidth    = im.width();
+                int myHeight   = im.width();
+                int myNumChans = im.spectrum();
+
+                //Check for dimension mismatch
+                if(myWidth != outWidth || myHeight != outHeight){
+                    return false;
+                }
+
+                //Find minimal # of channels
+                outMinNumChans = std::min<int>(myNumChans, outMinNumChans);
+            }
+        }
+    }catch(const CImgException& ex){
+        return false;
+    }catch(...){ //Catches ANYTHING thown
+        //This clause is included because I don't want to read the CImg
+        //source and verify that it ONLY throws CImgExceptionss
+        //The PDF documentation appears unclear on this matter, or maybe
+        //I haven't found the information.
+        return false;
+    }
+
+    //If we made it here we are good to go
+    return true;
+}
+
+
+CTFSolver::ImageExposurePair::ImageExposurePair(long microSeconds, const std::string& path) :
     microseconds(microSeconds), imagePath(path)
 {}
+
+
+std::ostream& operator<<(std::ostream& os, const CTFSolver::ImageExposurePair& im){
+    os << "{" << im.microseconds << ", " << im.imagePath << "}";
+    return os;
+}
 
 
 //TODO: Use a better RNG
@@ -27,7 +89,7 @@ static int randomInt(int minInclusive, int maxExclusive){
 
 
 typedef struct SamplePos{
-    SamplePos(int xPos = -1, int yPos = -1) : 
+    SamplePos(int xPos = -1, int yPos = -1) :
         x(xPos), y(yPos){}
     int x,y;
 }SamplePos;
@@ -37,7 +99,7 @@ static std::vector<SamplePos> genRandomSamples(int widthMax, int heightMax, int 
     //Allocate space
     std::vector<SamplePos> ret;
     ret.resize((size_t)numSamps);
-    
+
     //Add samples
     //TODO: Use stochastic sampling not pure random
     for(int i = 0; i < numSamps; i++){
@@ -49,10 +111,10 @@ static std::vector<SamplePos> genRandomSamples(int widthMax, int heightMax, int 
 }
 
 
-CTFSolver::CTFSolver(const std::vector<ImageExposurePair>& images, 
+CTFSolver::CTFSolver(const std::vector<ImageExposurePair>& images,
     size_t numSamps,
     CTF::ctf_t smoothingParam,
-    size_t channel) : 
+    size_t channel) :
     imdata(images), lambda(smoothingParam), chan(channel), numSamples(numSamps),
     wFunc(HAT)
 {
@@ -68,7 +130,7 @@ bool CTFSolver::writePixelPoints(const std::vector<PixelResult>& pixels,
 
         //Load current image
         CImg<unsigned char> currIm(imdata[j].imagePath.c_str());
-        
+
         //Loop over samples
         for(size_t i = 0; i < pixels.size(); i++){
             const int x = pixels[i].x;
@@ -103,7 +165,7 @@ CTF CTFSolver::solve(std::vector<PixelResult>* retPixels)const{
                 val = hatFuncParameterized(pixVal, 10);
                 break;
             default:
-                //This case should never occur, since the switch statement 
+                //This case should never occur, since the switch statement
                 //should be exhaustive for all possible weighting functions
                 assert(false);
                 val = hatFunc(pixVal);
@@ -150,7 +212,7 @@ CTF CTFSolver::solve(std::vector<PixelResult>* retPixels)const{
         assert((size_t)currIm.spectrum() > chan);
 
         for(size_t i = 0; i < numSamples; i++){ //Loop over sample positions
-            
+
             //Get pixel value at current sample
             const int x = samplePositions[i].x;
             const int y = samplePositions[i].y;
@@ -158,7 +220,7 @@ CTF CTFSolver::solve(std::vector<PixelResult>* retPixels)const{
 
             //Get value of weighting function
             const CTF::ctf_t w = wLut[pixVal];
-            
+
             //Update A matrix
             A(k,pixVal)  = w;
             A(k,n+i)     = -w;

@@ -7,6 +7,7 @@
 #include <cassert>
 //--
 #include "CTF.h"
+#include "WeightingFunctions.h"
 
 //TODO: Account for blooming pixels
 class CTFSolver{
@@ -23,6 +24,11 @@ public:
 
         //Get floating point time value
         CTF::ctf_t getTime()const{ return (CTF::ctf_t) (microseconds); }
+
+        //Comparison based on exposure time
+        bool operator<(const ImageExposurePair& other)const;
+        
+        friend std::ostream& operator<<(std::ostream& os, const ImageExposurePair& im);
     }ImageExposurePair;
 
     /**
@@ -74,6 +80,17 @@ public:
     size_t getChannelIndex()const;
     void setChannelIndex(size_t chanIndex);
 
+    /// Load a particular HDR stack and make sure all the images exist.
+    /// Also, return the width, height, and maximum color channels in the stack.
+    ///
+    /// @return true if all images exist and have the same dimensions.  Returns 
+    /// false otherwise.
+    /// @outWidth is set to the width of the images.
+    /// @outHeight is set to the width of the images.
+    /// @outMinNumChans is set to the minimum number of color channels found.
+    static bool checkImagesOK(std::vector<CTFSolver::ImageExposurePair>& images,
+        int& outWidth, int& outHeight, int& outMinNumChans);
+
 
 private:
     //Non-Copyable
@@ -121,6 +138,7 @@ inline void CTFSolver::setChannelIndex(size_t chanIndex){
 }
 
 inline CTF::ctf_t CTFSolver::hatFunc(unsigned char zVal)const{
+    /*
     const CTF::ctf_t z = static_cast<CTF::ctf_t>(zVal);
     const CTF::ctf_t Z_MIN = static_cast<CTF::ctf_t>(0.0  );
     const CTF::ctf_t Z_MAX = static_cast<CTF::ctf_t>(255.0);
@@ -128,12 +146,15 @@ inline CTF::ctf_t CTFSolver::hatFunc(unsigned char zVal)const{
     return 
         ((z <= (Z_MIN + Z_MAX)/static_cast<CTF::ctf_t>(2.0)) ? (z - Z_MIN) : 
         (Z_MAX - z));
+    */
+    return WeightingFunctions::hat(zVal);
 }
 
 
 inline CTF::ctf_t CTFSolver::hatFuncParameterized(unsigned char zVal,
     unsigned char cut)const
 {
+    /*
     assert(cut < 255);
 
     const CTF::ctf_t z = static_cast<CTF::ctf_t>(zVal);
@@ -144,6 +165,13 @@ inline CTF::ctf_t CTFSolver::hatFuncParameterized(unsigned char zVal,
         ((z <= (Z_MIN + Z_MAX)/static_cast<CTF::ctf_t>(2.0)) ? (z - Z_MIN) : 
         (Z_MAX - z))
         );
+    */
+    return WeightingFunctions::hat(zVal, cut, 255-cut);
+}
+
+
+inline bool CTFSolver::ImageExposurePair::operator<(const ImageExposurePair& other)const{
+    return microseconds < other.microseconds;
 }
 
 
