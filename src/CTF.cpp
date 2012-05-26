@@ -61,7 +61,7 @@ bool CTF::loadCTF(CTF& ctf, const std::string& fileName){
 }
 
 
-CTF::CTF CTF::makeLinearCTF(CTF::ctf_t maxCTFValue,
+CTF CTF::makeLinearCTF(CTF::ctf_t maxCTFValue,
     CTF::ctf_t minCTFValue)
 {
     assert(minCTFValue < maxCTFValue);
