@@ -5,15 +5,14 @@ function [img, scaleFactor] = parsePfm(filePath)
     %Open the file and check for errors
     fid = fopen(filePath, 'r');
     if fid == -1
-        error = MException('pfm:IOError', 'Could not open file!');
-        throw(error);
+        error('pfm:IOError', 'Could not open file!');
     end
     
     %File opened OK
     %
     %.pfm headers have 3 ASCII lines
-    %Line 1: THe text 'PF' or 'Pf' where the latter denotes grayscale and
-    %the former denotes color
+    %Line 1: The text 'PF' or 'Pf' where the former denotes color and the
+    % latter denotes grayscale
     %Line 2: Two integers, width then height.
     %Line 3: A single signed decimal number S
     %    is S < 0 then the file is little endian
@@ -35,8 +34,7 @@ function [img, scaleFactor] = parsePfm(filePath)
     line3 = fgetl(fid);
     if ~(ischar(line1) && ischar(line2) && ischar(line3))
         fclose(fid);
-        error = MException('pfm:IOError', 'Header was incomplete!');
-        throw(error);
+        error('pfm:IOError', 'Header was incomplete!');
     end
     
     %Parse line 1, determine color or BW 
@@ -46,16 +44,14 @@ function [img, scaleFactor] = parsePfm(filePath)
         numChannels = 1;
     else %Invalid header
         fclose(fid);
-        error = MException('pfm:IOError', 'Invalid .pfm header!');
-        throw(error);
+        error('pfm:IOError', 'Invalid .pfm header!');
     end
     
     %Parse line 2, get image dims
     [dims, foundCount, errMsg] = sscanf(line2, '%u %u');
     if numel(dims) ~= 2 || strcmp(errMsg,'') ~= 1 || foundCount ~= 2
         fclose(fid);
-        error = MException('pfm:IOError', 'Dimensions line was malformed!');
-        throw(error);
+        error('pfm:IOError', 'Dimensions line was malformed!');
     end
     imWidth  = dims(1);
     imHeight = dims(2);
@@ -64,8 +60,7 @@ function [img, scaleFactor] = parsePfm(filePath)
     [scale, matchCount, errMsg] = sscanf(line3, '%f');
     if matchCount ~= 1 || strcmp(errMsg,'') ~= 1
         fclose(fid);
-        error = MException('pfm:IOError', 'Endianness+Scale line was malformed!');
-        throw(error);
+        error('pfm:IOError', 'Endianness+Scale line was malformed!');
     end
     scaleFactor = abs(scale);
     endianChar = 'n';
@@ -88,24 +83,13 @@ function [img, scaleFactor] = parsePfm(filePath)
     [rawData, numFloatsRead] = fread(fid, totElems, 'single', 0, endianChar);
     if numFloatsRead ~= totElems
         fclose(fid);
-        error = MException('pfm:IOError', 'Raster data did not match header!');
-        throw(error);
+        error('pfm:IOError', 'Raster data did not match header!');
     end
     fclose(fid);
     
-    %Put the data into the output buffer
-    idx = 1;
-    for i = 1:imHeight
-        for j = 1:imWidth
-            for k = 1:numChannels
-                img(i,j,k) = rawData(idx);
-                idx = idx + 1;
-            end
-        end
-    end
-    %TODO: There's probably a Matlab function to do the above set of nested
-    %loops in a single statement.  This will likely be faster.  However,
-    %I'm not going to waste my time looking for it since .pfm IO is not a
-    %bottleneck in my code
+    %Put the data into the output buffer after re-shaping to match Matlab's
+    %ordering and color channel order.
+    imDataInReadOrder = reshape(rawData, [numChannels, imWidth, imHeight]);
+    img = permute(imDataInReadOrder, [3, 2, 1]);
     
 end
